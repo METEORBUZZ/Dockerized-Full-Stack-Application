@@ -18,15 +18,16 @@ services:
       # Initial schema and seed data mounted into init directory
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      # Host port 5433 mapped to container port 5432 to prevent conflict with local macOS Postgres
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
     networks:
       - app-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-fullstack_db}"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 5s
 
   # ==============================================================================
   # Backend API Service: Express Node.js Application
@@ -46,20 +47,21 @@ services:
       DB_USER: ${POSTGRES_USER:-postgres}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres_secure_dev_password}
       DB_NAME: ${POSTGRES_DB:-fullstack_db}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,http://localhost:80}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,http://localhost:80,http://localhost:5001}
     ports:
-      - "${PORT:-5000}:5000"
+      # Host port 5001 mapped to container 5000 to prevent conflict with macOS AirPlay (ControlCenter)
+      - "${API_HOST_PORT:-5001}:5000"
     networks:
       - app-network
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5000/api/health || exit 1"]
-      interval: 10s
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:5000/api/health || exit 1"]
+      interval: 5s
       timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 10s
 
   # ==============================================================================
   # Frontend Client Service: React SPA with Nginx Reverse Proxy
@@ -71,15 +73,17 @@ services:
     container_name: fullstack-client
     restart: unless-stopped
     ports:
+      # Accessible both via http://localhost:3000 and directly at http://localhost
       - "${CLIENT_PORT:-3000}:80"
+      - "80:80"
     networks:
       - app-network
     depends_on:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80/nginx-health || exit 1"]
-      interval: 10s
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:80/nginx-health || exit 1"]
+      interval: 5s
       timeout: 5s
       retries: 3
       start_period: 5s

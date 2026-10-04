@@ -39,7 +39,7 @@ EXPOSE 5000
 
 # Docker healthcheck
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:5000/api/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:5000/api/health || exit 1
 
 # Start production server
 CMD ["node", "dist/index.js"]

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Terminal, Shield, Zap, Check, AlertOctagon, HelpCircle, GitCommit, HeartPulse } from 'lucide-react';
+import { Terminal, Shield, Zap, Check, AlertOctagon, HeartPulse } from 'lucide-react';
 
 export const ParityFeatures: React.FC = () => {
   return (

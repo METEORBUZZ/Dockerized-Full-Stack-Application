@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, CheckCircle2, Clock, AlertCircle, Sparkles, Database } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Clock, AlertCircle, Database } from 'lucide-react';
 import { Item } from '../types';
 
 interface ItemManagerProps {
@@ -7,7 +7,7 @@ interface ItemManagerProps {
   onAddItem: (title: string, description: string, category: string, priority: string) => Promise<void>;
   onUpdateStatus: (id: number, status: Item['status']) => Promise<void>;
   onDeleteItem: (id: number) => Promise<void>;
-  loading: boolean;
+  loading?: boolean;
 }
 
 export const ItemManager: React.FC<ItemManagerProps> = ({
@@ -15,7 +15,6 @@ export const ItemManager: React.FC<ItemManagerProps> = ({
   onAddItem,
   onUpdateStatus,
   onDeleteItem,
-  loading,
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');

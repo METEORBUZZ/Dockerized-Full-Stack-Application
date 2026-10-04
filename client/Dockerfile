@@ -36,7 +36,7 @@ EXPOSE 80
 
 # Health check against Nginx health endpoint
 HEALTHCHECK --interval=15s --timeout=5s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:80/nginx-health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:80/nginx-health || exit 1
 
 # Launch Nginx in foreground
 CMD ["nginx", "-g", "daemon off;"]
