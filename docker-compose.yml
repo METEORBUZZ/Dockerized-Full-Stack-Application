@@ -1,0 +1,96 @@
+name: dockerized-fullstack-app
+
+services:
+  # ==============================================================================
+  # Database Service: PostgreSQL 16 (Alpine)
+  # ==============================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: fullstack-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_secure_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-fullstack_db}
+    volumes:
+      # Persistent named volume for database files across container restarts
+      - postgres_data:/var/lib/postgresql/data
+      # Initial schema and seed data mounted into init directory
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-fullstack_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ==============================================================================
+  # Backend API Service: Express Node.js Application
+  # ==============================================================================
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: fullstack-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 5000
+      API_HOST: 0.0.0.0
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres_secure_dev_password}
+      DB_NAME: ${POSTGRES_DB:-fullstack_db}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,http://localhost:80}
+    ports:
+      - "${PORT:-5000}:5000"
+    networks:
+      - app-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ==============================================================================
+  # Frontend Client Service: React SPA with Nginx Reverse Proxy
+  # ==============================================================================
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: fullstack-client
+    restart: unless-stopped
+    ports:
+      - "${CLIENT_PORT:-3000}:80"
+    networks:
+      - app-network
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80/nginx-health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+# ==============================================================================
+# Persistent Volumes & Network Isolation
+# ==============================================================================
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge

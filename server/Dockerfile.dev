@@ -1,0 +1,15 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy dependency definitions
+COPY package*.json ./
+
+# Install all dependencies including devDependencies (tsx, types, etc.)
+RUN npm install
+
+# Expose API port
+EXPOSE 5000
+
+# Start with tsx watch for live reloading upon file edits
+CMD ["npm", "run", "dev"]
